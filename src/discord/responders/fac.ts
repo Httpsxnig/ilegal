@@ -8,8 +8,9 @@ import {
     buildFacNoticeUpdateV2,
     canReviewFac,
     createFacRequestModal,
-    createFacRoleSelectRow,
+    createFacRoleSelectRows,
     facPanelButtonCustomId,
+    facRolePageCustomIdPrefix,
     facRoleSelectCustomId,
     generateFacRequestId,
     getGuildMemberFast,
@@ -65,8 +66,8 @@ createResponder({
             return;
         }
 
-        const selectRow = createFacRoleSelectRow(interaction.guild, config.facRoleIds ?? []);
-        if (!selectRow) {
+        const pageData = createFacRoleSelectRows(interaction.guild, config.facRoleIds ?? [], 0);
+        if (!pageData) {
             await interaction.editReply(
                 buildFacNoticeEditV2("error", "FAC indisponivel", "Nao encontrei cargos FAC validos na configuracao."),
             );
@@ -74,7 +75,72 @@ createResponder({
         }
 
         await interaction.editReply(
-            buildFacNoticeEditV2("info", "Solicitacao FAC", "Selecione abaixo o cargo FAC desejado.", [selectRow]),
+            buildFacNoticeEditV2(
+                "info",
+                "Solicitacao FAC",
+                `Selecione abaixo o cargo FAC desejado.\nPagina ${pageData.currentPage + 1}/${pageData.totalPages} (${pageData.totalItems} FACs).`,
+                pageData.rows,
+            ),
+        );
+    },
+});
+
+createResponder({
+    customId: `${facRolePageCustomIdPrefix}/:page`,
+    types: [ResponderType.Button],
+    cache: "cached",
+    parse: (params) => ({ page: Number(params.page) }),
+    async run(interaction, { page }) {
+        const config = await db.guildConfigs.get(interaction.guildId);
+        const missing = getMissingFacConfig(config);
+        if (missing.length) {
+            await interaction.update(
+                buildFacNoticeUpdateV2(
+                    "error",
+                    "Configuracao incompleta",
+                    `Faltam campos obrigatorios:\n${missing.map((item) => `- \`${item}\``).join("\n")}`,
+                ),
+            );
+            return;
+        }
+
+        const member = await getGuildMemberFast(interaction.guild, interaction.user.id);
+        if (!member) {
+            await interaction.update(
+                buildFacNoticeUpdateV2("error", "Membro indisponivel", "Nao consegui validar seu perfil no servidor."),
+            );
+            return;
+        }
+
+        if (config.verificadoRoleId && member.roles.cache.has(config.verificadoRoleId)) {
+            await interaction.update(
+                buildFacNoticeUpdateV2("warning", "Solicitacao bloqueada", "Voce ja possui cargo Verificado."),
+            );
+            return;
+        }
+
+        if (hasAnyFacRole(member, config.facRoleIds ?? [])) {
+            await interaction.update(
+                buildFacNoticeUpdateV2("warning", "Solicitacao bloqueada", "Voce ja possui um cargo FAC configurado."),
+            );
+            return;
+        }
+
+        const pageData = createFacRoleSelectRows(interaction.guild, config.facRoleIds ?? [], page);
+        if (!pageData) {
+            await interaction.update(
+                buildFacNoticeUpdateV2("error", "FAC indisponivel", "Nao encontrei cargos FAC validos na configuracao."),
+            );
+            return;
+        }
+
+        await interaction.update(
+            buildFacNoticeUpdateV2(
+                "info",
+                "Solicitacao FAC",
+                `Selecione abaixo o cargo FAC desejado.\nPagina ${pageData.currentPage + 1}/${pageData.totalPages} (${pageData.totalItems} FACs).`,
+                pageData.rows,
+            ),
         );
     },
 });

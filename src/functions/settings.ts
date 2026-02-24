@@ -260,6 +260,65 @@ export function buildFacRamoFacPicker(guild: Guild, facRoleIds: string[]) {
     );
 }
 
+export function buildFacRamoFacPickerPage(guild: Guild, facRoleIds: string[], page = 0) {
+    const roles = facRoleIds
+        .map((roleId) => guild.roles.cache.get(roleId))
+        .filter((role): role is NonNullable<typeof role> => Boolean(role));
+
+    if (!roles.length) return null;
+
+    const pageSize = 25;
+    const totalPages = Math.ceil(roles.length / pageSize);
+    const requestedPage = Number.isFinite(page) ? Math.trunc(page) : 0;
+    const safePage = Math.min(Math.max(0, requestedPage), totalPages - 1);
+    const start = safePage * pageSize;
+    const end = start + pageSize;
+    const pageRoles = roles.slice(start, end);
+
+    const picker = new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(
+        new StringSelectMenuBuilder()
+            .setCustomId("painel/link-ramo/select-fac")
+            .setPlaceholder(`Selecione a FAC... (${start + 1}-${Math.min(end, roles.length)} de ${roles.length})`)
+            .setMinValues(1)
+            .setMaxValues(1)
+            .addOptions(
+                pageRoles.map((role) => ({
+                    label: role.name.slice(0, 100),
+                    value: role.id,
+                    description: "Escolher FAC para vincular ramo",
+                })),
+            ),
+    );
+
+    const navigation = totalPages > 1
+        ? new ActionRowBuilder<ButtonBuilder>().addComponents(
+            new ButtonBuilder()
+                .setCustomId(`painel/link-ramo/page/${safePage - 1}`)
+                .setStyle(ButtonStyle.Secondary)
+                .setLabel("Anterior")
+                .setDisabled(safePage <= 0),
+            new ButtonBuilder()
+                .setCustomId("painel/link-ramo/page-indicator")
+                .setStyle(ButtonStyle.Secondary)
+                .setLabel(`Pagina ${safePage + 1}/${totalPages}`)
+                .setDisabled(true),
+            new ButtonBuilder()
+                .setCustomId(`painel/link-ramo/page/${safePage + 1}`)
+                .setStyle(ButtonStyle.Secondary)
+                .setLabel("Proxima")
+                .setDisabled(safePage >= totalPages - 1),
+        )
+        : null;
+
+    return {
+        picker,
+        navigation,
+        currentPage: safePage,
+        totalPages,
+        totalItems: roles.length,
+    };
+}
+
 export function buildFacRamoRolePicker(facRoleId: string) {
     return new ActionRowBuilder<RoleSelectMenuBuilder>().addComponents(
         new RoleSelectMenuBuilder()

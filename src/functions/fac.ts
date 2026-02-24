@@ -21,6 +21,7 @@ type NoticeTone = "info" | "success" | "warning" | "error";
 
 export const facPanelButtonCustomId = "fac/request/start";
 export const facRoleSelectCustomId = "fac/request/select-role";
+export const facRolePageCustomIdPrefix = "fac/request/page";
 
 const toneMap: Record<NoticeTone, { color: `#${string}`; prefix: string; }> = {
     info: { color: "#3b82f6", prefix: "INFO" },
@@ -141,6 +142,63 @@ export function createFacRoleSelectRow(guild: Guild, facRoleIds: string[]) {
             .setMaxValues(1)
             .addOptions(options),
     );
+}
+
+export function createFacRoleSelectRows(guild: Guild, facRoleIds: string[], page = 0) {
+    const roles = facRoleIds
+        .map((id) => guild.roles.cache.get(id))
+        .filter((role): role is NonNullable<typeof role> => Boolean(role));
+
+    if (!roles.length) return null;
+
+    const pageSize = 25;
+    const totalPages = Math.ceil(roles.length / pageSize);
+    const requestedPage = Number.isFinite(page) ? Math.trunc(page) : 0;
+    const safePage = Math.min(Math.max(0, requestedPage), totalPages - 1);
+    const start = safePage * pageSize;
+    const end = start + pageSize;
+
+    const selectRow = new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(
+        new StringSelectMenuBuilder()
+            .setCustomId(facRoleSelectCustomId)
+            .setPlaceholder(`Selecione o cargo FAC... (${start + 1}-${Math.min(end, roles.length)} de ${roles.length})`)
+            .setMinValues(1)
+            .setMaxValues(1)
+            .addOptions(
+                roles.slice(start, end).map((role) => ({
+                    label: role.name.slice(0, 100),
+                    value: role.id,
+                    description: `Solicitar ${role.name}`.slice(0, 100),
+                })),
+            ),
+    );
+
+    const navigation = totalPages > 1
+        ? new ActionRowBuilder<ButtonBuilder>().addComponents(
+            new ButtonBuilder()
+                .setCustomId(`${facRolePageCustomIdPrefix}/${safePage - 1}`)
+                .setStyle(ButtonStyle.Secondary)
+                .setLabel("Anterior")
+                .setDisabled(safePage <= 0),
+            new ButtonBuilder()
+                .setCustomId(`${facRolePageCustomIdPrefix}/indicator`)
+                .setStyle(ButtonStyle.Secondary)
+                .setLabel(`Pagina ${safePage + 1}/${totalPages}`)
+                .setDisabled(true),
+            new ButtonBuilder()
+                .setCustomId(`${facRolePageCustomIdPrefix}/${safePage + 1}`)
+                .setStyle(ButtonStyle.Secondary)
+                .setLabel("Proxima")
+                .setDisabled(safePage >= totalPages - 1),
+        )
+        : null;
+
+    return {
+        rows: navigation ? [selectRow, navigation] : [selectRow],
+        currentPage: safePage,
+        totalPages,
+        totalItems: roles.length,
+    };
 }
 
 export function createFacRequestModal(facRoleId: string) {

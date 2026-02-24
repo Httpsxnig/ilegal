@@ -5,7 +5,7 @@ import {
     buildFacNoticeReplyV2,
     buildFacNoticeUpdateV2,
     buildFacPanelMessageV2,
-    buildFacRamoFacPicker,
+    buildFacRamoFacPickerPage,
     buildFacRamoRolePicker,
     buildFacRolePicker,
     buildFacSettingsV2PanelUpdate,
@@ -96,20 +96,49 @@ createResponder({
     async run(interaction) {
         if (!await ensurePanelPermission(interaction)) return;
         const config = await db.guildConfigs.get(interaction.guildId);
-        const picker = buildFacRamoFacPicker(interaction.guild, config.facRoleIds ?? []);
-        if (!picker) {
+        const pageData = buildFacRamoFacPickerPage(interaction.guild, config.facRoleIds ?? [], 0);
+        if (!pageData) {
             await interaction.reply(
                 buildFacNoticeReplyV2("warning", "FAC nao configurada", "Defina primeiro os cargos FAC no painel."),
             );
             return;
         }
 
+        const rows = pageData.navigation ? [pageData.picker, pageData.navigation] : [pageData.picker];
         await interaction.reply(
             buildFacNoticeReplyV2(
                 "info",
                 "Vincular ramo por FAC",
-                "Selecione a FAC que recebera cargos de ramo automaticos na aprovacao.",
-                [picker],
+                `Selecione a FAC que recebera cargos de ramo automaticos na aprovacao.\nPagina ${pageData.currentPage + 1}/${pageData.totalPages} (${pageData.totalItems} FACs).`,
+                rows,
+            ),
+        );
+    },
+});
+
+createResponder({
+    customId: "painel/link-ramo/page/:page",
+    types: [ResponderType.Button],
+    cache: "cached",
+    parse: (params) => ({ page: Number(params.page) }),
+    async run(interaction, { page }) {
+        if (!await ensurePanelPermission(interaction)) return;
+        const config = await db.guildConfigs.get(interaction.guildId);
+        const pageData = buildFacRamoFacPickerPage(interaction.guild, config.facRoleIds ?? [], page);
+        if (!pageData) {
+            await interaction.update(
+                buildFacNoticeUpdateV2("warning", "FAC nao configurada", "Defina primeiro os cargos FAC no painel."),
+            );
+            return;
+        }
+
+        const rows = pageData.navigation ? [pageData.picker, pageData.navigation] : [pageData.picker];
+        await interaction.update(
+            buildFacNoticeUpdateV2(
+                "info",
+                "Vincular ramo por FAC",
+                `Selecione a FAC que recebera cargos de ramo automaticos na aprovacao.\nPagina ${pageData.currentPage + 1}/${pageData.totalPages} (${pageData.totalItems} FACs).`,
+                rows,
             ),
         );
     },

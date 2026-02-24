@@ -21,7 +21,7 @@ export type FacPanelChannelKey = typeof facPanelChannelKeys[number];
 export type FacPanelRoleKey = typeof facPanelRoleKeys[number];
 
 export const facPanelChannelLabels: Record<FacPanelChannelKey, string> = {
-    panelChannelId: "Canal do painel FAC",
+    panelChannelId: "Canal do Setagem FAC",
     analiseChannelId: "Canal de analise FAC",
     logChannelId: "Canal de logs FAC",
 };
@@ -131,7 +131,7 @@ function buildFacSettingsComponents() {
         new ButtonBuilder()
             .setCustomId("painel/publish-fac")
             .setStyle(ButtonStyle.Primary)
-            .setLabel("Publicar painel FAC aqui"),
+            .setLabel("Publicar Setagem FAC aqui"),
         new ButtonBuilder()
             .setCustomId("painel/edit-fac-ids")
             .setStyle(ButtonStyle.Secondary)

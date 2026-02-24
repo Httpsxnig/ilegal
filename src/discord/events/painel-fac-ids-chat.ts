@@ -8,7 +8,7 @@ import {
 } from "#functions";
 
 createEvent({
-    name: "Painel FAC por ID via chat",
+    name: "Setagem FAC por ID via chat",
     event: "messageCreate",
     async run(message) {
         if (message.author.bot || !message.guildId) return;

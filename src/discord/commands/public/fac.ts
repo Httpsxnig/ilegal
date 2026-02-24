@@ -29,7 +29,7 @@ createCommand({
 
         if (!targetChannel || !("messages" in targetChannel)) {
             await interaction.editReply(
-                buildFacNoticeEditV2("error", "Canal invalido", "Nao consegui acessar o canal para publicar o painel FAC."),
+                buildFacNoticeEditV2("error", "Canal invalido", "Nao consegui acessar o canal para publicar o Setagem FAC."),
             );
             return;
         }
@@ -54,7 +54,7 @@ createCommand({
         await interaction.editReply(
             buildFacNoticeEditV2(
                 "success",
-                "Painel FAC publicado",
+                "Setagem FAC publicado",
                 `Painel enviado em <#${targetChannel.id}>.`,
             ),
         );

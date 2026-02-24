@@ -380,7 +380,7 @@ createResponder({
         await config.save();
 
         await interaction.reply(
-            buildFacNoticeReplyV2("success", "Painel FAC publicado", `Painel enviado em <#${channel.id}>.`),
+            buildFacNoticeReplyV2("success", "Setagem FAC publicado", `Painel enviado em <#${channel.id}>.`),
         );
     },
 });

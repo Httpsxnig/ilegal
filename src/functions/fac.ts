@@ -99,7 +99,7 @@ export function createFacPanelRow() {
 export function buildFacPanelMessageV2(guild: Guild) {
     const container = createContainer(
         "#3b82f6",
-        createTextDisplay(`## Painel FAC | ${guild.name}`),
+        createTextDisplay(`## Setagem FAC | ${guild.name}`),
         createSeparator(),
         createTextDisplay(
             [

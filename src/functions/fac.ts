@@ -111,7 +111,7 @@ export function buildFacPanelMessageV2(guild: Guild) {
         createSeparator(),
         createFacPanelRow(),
         createSeparator(),
-        createTextDisplay(`-# Sistema FAC | ${formatFacDate()}`),
+        createTextDisplay(`-# (©) Direitos reservados da Lotus Group}`),
     );
 
     return {

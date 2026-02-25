@@ -6,10 +6,18 @@ import { facRequestSchema } from "./schemas/fac-request.js";
 import { env } from "#env";
 import chalk from "chalk";
 
+mongoose.set("bufferCommands", false);
+mongoose.set("autoIndex", false);
+
 try {
    console.log(chalk.blue("Connecting to MongoDB..."));
-   await mongoose.connect(env.MONGO_URI, { 
-      dbName: env.DATABASE_NAME || "database" 
+   await mongoose.connect(env.MONGO_URI, {
+      dbName: env.DATABASE_NAME || "database",
+      maxPoolSize: env.MONGO_MAX_POOL_SIZE ?? 6,
+      minPoolSize: env.MONGO_MIN_POOL_SIZE ?? 0,
+      maxIdleTimeMS: env.MONGO_MAX_IDLE_MS ?? 30000,
+      serverSelectionTimeoutMS: env.MONGO_SERVER_SELECTION_TIMEOUT_MS ?? 10000,
+      heartbeatFrequencyMS: 10000,
    });
    console.log(chalk.green("MongoDB connected"));
 } catch(err){

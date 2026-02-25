@@ -45,6 +45,17 @@ const facRoleIdsChatSessions = new Map<string, {
     expiresAt: number;
 }>();
 
+const FAC_ROLE_IDS_CHAT_SWEEP_MS = 60 * 1000;
+const facRoleIdsSweepTimer = setInterval(() => {
+    const now = Date.now();
+    for (const [userId, session] of facRoleIdsChatSessions.entries()) {
+        if (session.expiresAt <= now) {
+            facRoleIdsChatSessions.delete(userId);
+        }
+    }
+}, FAC_ROLE_IDS_CHAT_SWEEP_MS);
+facRoleIdsSweepTimer.unref();
+
 export function isFacPanelChannelKey(value: string): value is FacPanelChannelKey {
     return (facPanelChannelKeys as readonly string[]).includes(value);
 }

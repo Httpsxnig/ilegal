@@ -19,4 +19,6 @@ export const env = await validateEnv(z.looseObject({
         .transform((value) => value?.toLowerCase() !== "false"),
     AUTO_RESTART_MAX_MEMORY_MB: z.coerce.number().min(5).max(4096).optional(),
     AUTO_RESTART_CHECK_INTERVAL_MS: z.coerce.number().int().min(1000).max(300000).optional(),
+    AUTO_RESTART_MEMORY_METRIC: z.enum(["heapUsed", "rss"]).optional(),
+    AUTO_RESTART_BREACH_COUNT: z.coerce.number().int().min(1).max(60).optional(),
 }));

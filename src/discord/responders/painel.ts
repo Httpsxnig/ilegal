@@ -13,6 +13,7 @@ import {
     facPanelChannelLabels,
     facPanelRoleLabels,
     getRamoRoleByFacMap,
+    isComponentDisplayableTextOverflowError,
     isFacPanelChannelKey,
     isFacPanelRoleKey,
     startFacRoleIdsChatSession,
@@ -32,6 +33,34 @@ async function ensurePanelPermission(interaction: {
         buildFacNoticeReplyV2("error", "Sem permissao", "Voce precisa de Gerenciar Servidor para alterar configuracoes.", [], true),
     );
     return false;
+}
+
+async function updatePanelSafely(
+    interaction: { guild: unknown; update: (options: Record<string, unknown>) => Promise<unknown>; },
+    guild: Parameters<typeof buildFacSettingsV2PanelUpdate>[0],
+    config: Parameters<typeof buildFacSettingsV2PanelUpdate>[1],
+    page = 0,
+) {
+    try {
+        await interaction.update(
+            buildFacSettingsV2PanelUpdate(guild, config, page),
+        );
+    } catch (error) {
+        if (isComponentDisplayableTextOverflowError(error)) {
+            await interaction.update(
+                buildFacNoticeUpdateV2(
+                    "warning",
+                    "Painel em modo seguro",
+                    "O painel excedeu o limite do Discord. Use os botoes e clique em Atualizar painel.",
+                ),
+            ).catch(() => null);
+            return;
+        }
+
+        await interaction.update(
+            buildFacNoticeUpdateV2("error", "Falha ao atualizar painel", "Nao consegui atualizar o painel agora. Tente novamente."),
+        ).catch(() => null);
+    }
 }
 
 createResponder({
@@ -356,9 +385,7 @@ createResponder({
         );
 
         const updatedConfig = await db.guildConfigs.get(interaction.guildId);
-        await interaction.update(
-            buildFacSettingsV2PanelUpdate(interaction.guild, updatedConfig),
-        );
+        await updatePanelSafely(interaction, interaction.guild, updatedConfig);
     },
 });
 
@@ -369,9 +396,26 @@ createResponder({
     async run(interaction) {
         if (!await ensurePanelPermission(interaction)) return;
         const config = await db.guildConfigs.get(interaction.guildId);
-        await interaction.update(
-            buildFacSettingsV2PanelUpdate(interaction.guild, config),
-        );
+        await updatePanelSafely(interaction, interaction.guild, config);
+    },
+});
+
+createResponder({
+    customId: "painel/page/:page",
+    types: [ResponderType.Button],
+    cache: "cached",
+    parse: (params) => ({ page: Number(params.page) }),
+    async run(interaction, { page }) {
+        if (!await ensurePanelPermission(interaction)) return;
+        if (!Number.isFinite(page)) {
+            await interaction.reply(
+                buildFacNoticeReplyV2("error", "Pagina invalida", "Nao consegui abrir essa pagina do painel."),
+            );
+            return;
+        }
+
+        const config = await db.guildConfigs.get(interaction.guildId);
+        await updatePanelSafely(interaction, interaction.guild, config, page);
     },
 });
 

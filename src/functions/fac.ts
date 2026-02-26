@@ -30,6 +30,32 @@ const toneMap: Record<NoticeTone, { color: `#${string}`; prefix: string; }> = {
     error: { color: "#ef4444", prefix: "ERRO" },
 };
 
+const DISCORD_LABEL_MAX = 100;
+const DISCORD_DESCRIPTION_MAX = 100;
+const DISCORD_PLACEHOLDER_MAX = 150;
+const COMPONENT_TEXT_MAX = 1000;
+
+function clampText(text: string, max: number) {
+    if (!text) return "";
+    return text.length > max ? `${text.slice(0, Math.max(0, max - 3))}...` : text;
+}
+
+function clampLabel(text: string) {
+    return clampText(text, DISCORD_LABEL_MAX);
+}
+
+function clampDescription(text: string) {
+    return clampText(text, DISCORD_DESCRIPTION_MAX);
+}
+
+function clampPlaceholder(text: string) {
+    return clampText(text, DISCORD_PLACEHOLDER_MAX);
+}
+
+function clampComponentText(text: string) {
+    return clampText(text, COMPONENT_TEXT_MAX);
+}
+
 export function formatFacDate(date: Date | number = new Date()) {
     const value = date instanceof Date ? date : new Date(date);
     return value.toLocaleString("pt-BR");
@@ -92,7 +118,7 @@ export function createFacPanelRow() {
     return new ActionRowBuilder<ButtonBuilder>().addComponents(
         new ButtonBuilder()
             .setCustomId(facPanelButtonCustomId)
-            .setLabel("Solicitar Setagem FAC")
+            .setLabel(clampLabel("Solicitar Setagem FAC"))
             .setStyle(ButtonStyle.Primary),
     );
 }
@@ -100,19 +126,21 @@ export function createFacPanelRow() {
 export function buildFacPanelMessageV2(guild: Guild) {
     const container = createContainer(
         "#3b82f6",
-        createTextDisplay(`## Setagem FAC | ${guild.name}`),
+        createTextDisplay(clampComponentText(`## Setagem FAC | ${guild.name}`)),
         createSeparator(),
         createTextDisplay(
+            clampComponentText(
             [
                 "> Sistema de solicitacao de setagem FAC.",
                 "> Clique no botao abaixo para abrir seu formulario.",
                 "> A equipe staff vai analisar e aprovar ou negar seu pedido.",
             ].join("\n"),
+            ),
         ),
         createSeparator(),
         createFacPanelRow(),
         createSeparator(),
-        createTextDisplay(`-# (©) Direitos reservados da Lotus Group}`),
+        createTextDisplay("-# (c) Direitos reservados da Lotus Group"),
     );
 
     return {
@@ -127,9 +155,9 @@ export function createFacRoleSelectRow(guild: Guild, facRoleIds: string[]) {
         .filter((role): role is NonNullable<typeof role> => Boolean(role))
         .slice(0, 25)
         .map((role) => ({
-            label: role.name.slice(0, 100),
+            label: clampLabel(role.name),
             value: role.id,
-            description: `Solicitar ${role.name}`.slice(0, 100),
+            description: clampDescription(`Solicitar ${role.name}`),
         }));
 
     if (!options.length) return null;
@@ -137,7 +165,7 @@ export function createFacRoleSelectRow(guild: Guild, facRoleIds: string[]) {
     return new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(
         new StringSelectMenuBuilder()
             .setCustomId(facRoleSelectCustomId)
-            .setPlaceholder("Selecione o cargo FAC...")
+            .setPlaceholder(clampPlaceholder("Selecione o cargo FAC..."))
             .setMinValues(1)
             .setMaxValues(1)
             .addOptions(options),
@@ -161,14 +189,14 @@ export function createFacRoleSelectRows(guild: Guild, facRoleIds: string[], page
     const selectRow = new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(
         new StringSelectMenuBuilder()
             .setCustomId(facRoleSelectCustomId)
-            .setPlaceholder(`Selecione o cargo FAC... (${start + 1}-${Math.min(end, roles.length)} de ${roles.length})`)
+            .setPlaceholder(clampPlaceholder(`Selecione o cargo FAC... (${start + 1}-${Math.min(end, roles.length)} de ${roles.length})`))
             .setMinValues(1)
             .setMaxValues(1)
             .addOptions(
                 roles.slice(start, end).map((role) => ({
-                    label: role.name.slice(0, 100),
+                    label: clampLabel(role.name),
                     value: role.id,
-                    description: `Solicitar ${role.name}`.slice(0, 100),
+                    description: clampDescription(`Solicitar ${role.name}`),
                 })),
             ),
     );
@@ -178,17 +206,17 @@ export function createFacRoleSelectRows(guild: Guild, facRoleIds: string[], page
             new ButtonBuilder()
                 .setCustomId(`${facRolePageCustomIdPrefix}/${safePage - 1}`)
                 .setStyle(ButtonStyle.Secondary)
-                .setLabel("Anterior")
+                .setLabel(clampLabel("Anterior"))
                 .setDisabled(safePage <= 0),
             new ButtonBuilder()
                 .setCustomId(`${facRolePageCustomIdPrefix}/indicator`)
                 .setStyle(ButtonStyle.Secondary)
-                .setLabel(`Pagina ${safePage + 1}/${totalPages}`)
+                .setLabel(clampLabel(`Pagina ${safePage + 1}/${totalPages}`))
                 .setDisabled(true),
             new ButtonBuilder()
                 .setCustomId(`${facRolePageCustomIdPrefix}/${safePage + 1}`)
                 .setStyle(ButtonStyle.Secondary)
-                .setLabel("Proxima")
+                .setLabel(clampLabel("Proxima"))
                 .setDisabled(safePage >= totalPages - 1),
         )
         : null;
@@ -204,11 +232,11 @@ export function createFacRoleSelectRows(guild: Guild, facRoleIds: string[], page
 export function createFacRequestModal(facRoleId: string) {
     return new ModalBuilder()
         .setCustomId(`fac/request/modal/${facRoleId}`)
-        .setTitle("Solicitacao FAC")
+        .setTitle(clampLabel("Solicitacao FAC"))
         .addLabelComponents(
             new LabelBuilder()
-                .setLabel("Nome")
-                .setDescription("Informe o nome para setagem.")
+                .setLabel(clampLabel("Nome"))
+                .setDescription(clampDescription("Informe o nome para setagem."))
                 .setTextInputComponent(
                     new TextInputBuilder()
                         .setCustomId("nome")
@@ -218,8 +246,8 @@ export function createFacRequestModal(facRoleId: string) {
                         .setMaxLength(40),
                 ),
             new LabelBuilder()
-                .setLabel("ID")
-                .setDescription("Informe apenas numeros.")
+                .setLabel(clampLabel("ID"))
+                .setDescription(clampDescription("Informe apenas numeros."))
                 .setTextInputComponent(
                     new TextInputBuilder()
                         .setCustomId("gameId")
@@ -229,25 +257,25 @@ export function createFacRequestModal(facRoleId: string) {
                         .setMaxLength(20),
                 ),
             new LabelBuilder()
-                .setLabel("Rank")
-                .setDescription("Escolha o rank desejado.")
+                .setLabel(clampLabel("Rank"))
+                .setDescription(clampDescription("Escolha o rank desejado."))
                 .setStringSelectMenuComponent(
                     new StringSelectMenuBuilder()
                         .setCustomId("rank")
-                        .setPlaceholder("Selecione o rank...")
+                        .setPlaceholder(clampPlaceholder("Selecione o rank..."))
                         .setRequired(true)
                         .setMinValues(1)
                         .setMaxValues(1)
                         .addOptions(
                             {
-                                label: "Lider",
+                                label: clampLabel("Lider"),
                                 value: "LIDER",
-                                description: "Prefixo [01]",
+                                description: clampDescription("Prefixo [01]"),
                             },
                             {
-                                label: "Sub",
+                                label: clampLabel("Sub"),
                                 value: "SUB",
-                                description: "Prefixo [02]",
+                                description: clampDescription("Prefixo [02]"),
                             },
                         ),
                 ),
@@ -258,12 +286,12 @@ export function createAnalysisButtons(requestId: string, disabled = false) {
     return new ActionRowBuilder<ButtonBuilder>().addComponents(
         new ButtonBuilder()
             .setCustomId(`fac/review/approve/${requestId}`)
-            .setLabel("Aprovar")
+            .setLabel(clampLabel("Aprovar"))
             .setStyle(ButtonStyle.Success)
             .setDisabled(disabled),
         new ButtonBuilder()
             .setCustomId(`fac/review/deny/${requestId}`)
-            .setLabel("Negar")
+            .setLabel(clampLabel("Negar"))
             .setStyle(ButtonStyle.Danger)
             .setDisabled(disabled),
     );
@@ -283,22 +311,24 @@ export function buildAnalysisMessageV2(
             ? `APROVADO por <@${request.decidedBy}> em ${formatFacDate(request.decidedAt ?? new Date())}`
             : `NEGADO por <@${request.decidedBy}> em ${formatFacDate(request.decidedAt ?? new Date())}`;
 
+    const details = clampComponentText(
+        [
+            `- Request ID: \`${request.requestId}\``,
+            `- Status: **${statusText}**`,
+            `- Usuario: <@${request.userId}> (\`${request.userId}\`)`,
+            `- Cargo FAC: <@&${request.facRoleId}>`,
+            `- Nome: ${request.nome}`,
+            `- ID: ${request.gameId}`,
+            `- **Rank:** ${request.rank}`,
+            `- Data: ${formatFacDate(request.createdAt)}`,
+        ].join("\n"),
+    );
+
     const container = createContainer(
         color,
-        createTextDisplay("## Analise de Setagem FAC"),
+        createTextDisplay(clampComponentText("## Analise de Setagem FAC")),
         createSeparator(),
-        createTextDisplay(
-            [
-                `- Request ID: \`${request.requestId}\``,
-                `- Status: **${statusText}**`,
-                `- Usuario: <@${request.userId}> (\`${request.userId}\`)`,
-                `- Cargo FAC: <@&${request.facRoleId}>`,
-                `- Nome: ${request.nome}`,
-                `- ID: ${request.gameId}`,
-                `- **Rank:** ${request.rank}`,
-                `- Data: ${formatFacDate(request.createdAt)}`,
-            ].join("\n"),
-        ),
+        createTextDisplay(details),
         createSeparator(),
         createAnalysisButtons(request.requestId, disableButtons),
     );
@@ -326,25 +356,27 @@ export function buildFacLogMessageV2(params: {
         ? (params.nicknameApplied ? "OK" : `FALHA${params.nicknameError ? ` (${params.nicknameError})` : ""}`)
         : "NAO APLICADO";
 
+    const details = clampComponentText(
+        [
+            `- Request ID: \`${request.requestId}\``,
+            `- Status: **${request.status === "APPROVED" ? "APROVADO" : "NEGADO"}**`,
+            `- Usuario: <@${request.userId}> (\`${request.userId}\`)`,
+            `- Cargo FAC: <@&${request.facRoleId}>`,
+            `- Nome/ID: ${request.nome} | ${request.gameId}`,
+            `- **Rank:** ${request.rank}`,
+            `- Staff: ${reviewerId ? `<@${reviewerId}>` : "`Nao definido`"}`,
+            `- Criado em: ${formatFacDate(request.createdAt)}`,
+            `- Decidido em: ${formatFacDate(request.decidedAt ?? new Date())}`,
+            `- Cargos: ${clampText(roleStatus, 120)}`,
+            `- Nickname: ${clampText(nickStatus, 120)}`,
+        ].join("\n"),
+    );
+
     const container = createContainer(
         color,
-        createTextDisplay("## Log Final FAC"),
+        createTextDisplay(clampComponentText("## Log Final FAC")),
         createSeparator(),
-        createTextDisplay(
-            [
-                `- Request ID: \`${request.requestId}\``,
-                `- Status: **${request.status === "APPROVED" ? "APROVADO" : "NEGADO"}**`,
-                `- Usuario: <@${request.userId}> (\`${request.userId}\`)`,
-                `- Cargo FAC: <@&${request.facRoleId}>`,
-                `- Nome/ID: ${request.nome} | ${request.gameId}`,
-                `- **Rank:** ${request.rank}`,
-                `- Staff: ${reviewerId ? `<@${reviewerId}>` : "`Nao definido`"}`,
-                `- Criado em: ${formatFacDate(request.createdAt)}`,
-                `- Decidido em: ${formatFacDate(request.decidedAt ?? new Date())}`,
-                `- Cargos: ${roleStatus}`,
-                `- Nickname: ${nickStatus}`,
-            ].join("\n"),
-        ),
+        createTextDisplay(details),
     );
 
     return {
@@ -490,8 +522,8 @@ function createFacNoticeContainer(
     const palette = toneMap[tone];
     return createContainer(
         palette.color,
-        createTextDisplay(`## ${palette.prefix} | ${title}`),
-        createTextDisplay(description),
+        createTextDisplay(clampComponentText(`## ${palette.prefix} | ${title}`)),
+        createTextDisplay(clampComponentText(description)),
         ...(rows.length ? [createSeparator(), ...rows] : []),
     );
 }

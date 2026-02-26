@@ -14,6 +14,53 @@ import {
     type InteractionUpdateOptions,
 } from "discord.js";
 
+const DISCORD_LABEL_MAX = 100;
+const DISCORD_DESCRIPTION_MAX = 100;
+const DISCORD_PLACEHOLDER_MAX = 150;
+const COMPONENT_TEXT_MAX = 1000;
+const PANEL_TEXT_BUDGET = 2600;
+const PANEL_LIST_PAGE_SIZE = 8;
+
+export const facPanelPageCustomIdPrefix = "painel/page";
+
+export function clampText(text: string, max: number): string {
+    if (!text) return "";
+    return text.length > max ? `${text.slice(0, Math.max(0, max - 3))}...` : text;
+}
+
+export function isComponentDisplayableTextOverflowError(error: unknown) {
+    if (!error || typeof error !== "object") return false;
+    const parsed = error as {
+        code?: unknown;
+        message?: unknown;
+        rawError?: { message?: unknown; };
+    };
+
+    if (parsed.code !== 50035) return false;
+    const message = [
+        typeof parsed.message === "string" ? parsed.message : "",
+        typeof parsed.rawError?.message === "string" ? parsed.rawError.message : "",
+    ].join(" ");
+
+    return /COMPONENT_DISPLAYABLE_TEXT_SIZE_EXCEEDED|displayable text size exceeds maximum size of 4000/i.test(message);
+}
+
+function clampLabel(text: string) {
+    return clampText(text, DISCORD_LABEL_MAX);
+}
+
+function clampDescription(text: string) {
+    return clampText(text, DISCORD_DESCRIPTION_MAX);
+}
+
+function clampPlaceholder(text: string) {
+    return clampText(text, DISCORD_PLACEHOLDER_MAX);
+}
+
+function clampComponentText(text: string) {
+    return clampText(text, COMPONENT_TEXT_MAX);
+}
+
 export const facPanelChannelKeys = ["panelChannelId", "analiseChannelId", "logChannelId"] as const;
 export const facPanelRoleKeys = ["verificadoRoleId", "ramoRoleIds", "staffRoleIds", "facRoleIds"] as const;
 
@@ -74,7 +121,7 @@ function formatRole(roleId?: string | null) {
 
 function formatRoleList(roleIds?: string[] | null) {
     if (!roleIds?.length) return "`Nao definido`";
-    return roleIds.map((id) => `<@&${id}>`).join(", ");
+    return clampComponentText(roleIds.map((id) => `<@&${id}>`).join(", "));
 }
 
 function normalizeRamoRoleByFac(value: unknown) {
@@ -118,23 +165,23 @@ function getDefaultRamoRoles(config: Partial<GuildConfigSchema>) {
 function buildFacSettingsComponents() {
     const channelSelect = new StringSelectMenuBuilder()
         .setCustomId("painel/select-channel")
-        .setPlaceholder("Configurar canais FAC")
+        .setPlaceholder(clampPlaceholder("Configurar canais FAC"))
         .addOptions(
             facPanelChannelKeys.map((key) => ({
-                label: facPanelChannelLabels[key],
+                label: clampLabel(facPanelChannelLabels[key]),
                 value: key,
-                description: "Definir canal",
+                description: clampDescription("Definir canal"),
             })),
         );
 
     const roleSelect = new StringSelectMenuBuilder()
         .setCustomId("painel/select-role")
-        .setPlaceholder("Configurar cargos FAC")
+        .setPlaceholder(clampPlaceholder("Configurar cargos FAC"))
         .addOptions(
             facPanelRoleKeys.map((key) => ({
-                label: facPanelRoleLabels[key],
+                label: clampLabel(facPanelRoleLabels[key]),
                 value: key,
-                description: key.endsWith("Ids") ? "Permite multiplos cargos" : "Permite um cargo",
+                description: clampDescription(key.endsWith("Ids") ? "Permite multiplos cargos" : "Permite um cargo"),
             })),
         );
 
@@ -142,23 +189,23 @@ function buildFacSettingsComponents() {
         new ButtonBuilder()
             .setCustomId("painel/publish-fac")
             .setStyle(ButtonStyle.Primary)
-            .setLabel("Publicar Setagem FAC aqui"),
+            .setLabel(clampLabel("Publicar Setagem FAC aqui")),
         new ButtonBuilder()
             .setCustomId("painel/edit-fac-ids")
             .setStyle(ButtonStyle.Secondary)
-            .setLabel("FAC por ID"),
+            .setLabel(clampLabel("FAC por ID")),
         new ButtonBuilder()
             .setCustomId("painel/link-ramo")
             .setStyle(ButtonStyle.Secondary)
-            .setLabel("Vincular ramo por FAC"),
+            .setLabel(clampLabel("Vincular ramo por FAC")),
         new ButtonBuilder()
             .setCustomId("painel/refresh")
             .setStyle(ButtonStyle.Secondary)
-            .setLabel("Atualizar painel"),
+            .setLabel(clampLabel("Atualizar painel")),
         new ButtonBuilder()
             .setCustomId("painel/reset-all")
             .setStyle(ButtonStyle.Danger)
-            .setLabel("Resetar tudo"),
+            .setLabel(clampLabel("Resetar tudo")),
     );
 
     return [
@@ -168,58 +215,120 @@ function buildFacSettingsComponents() {
     ];
 }
 
-function buildFacSettingsV2PanelBase(guild: Guild, config: Partial<GuildConfigSchema>) {
-    const components = buildFacSettingsComponents();
-    const ramoByFac = normalizeRamoRoleByFac((config as { ramoRoleByFac?: unknown; }).ramoRoleByFac);
-    const ramoByFacLines = Object.entries(ramoByFac).length
-        ? Object.entries(ramoByFac).map(([facRoleId, ramoRoleIds]) => `- <@&${facRoleId}> -> ${ramoRoleIds.map((id) => `<@&${id}>`).join(", ")}`)
-        : ["`Nenhum vinculo definido`"];
-
-    return createContainer(
-        "#4f46e5",
-        createTextDisplay(`## Painel de configuracao FAC | ${guild.name}`),
-        createSeparator(),
-        createTextDisplay(
-            [
-                "### Canais",
-                `- ${facPanelChannelLabels.panelChannelId}: ${formatChannel(config.panelChannelId)}`,
-                `- ${facPanelChannelLabels.analiseChannelId}: ${formatChannel(config.analiseChannelId)}`,
-                `- ${facPanelChannelLabels.logChannelId}: ${formatChannel(config.logChannelId)}`,
-            ].join("\n"),
-        ),
-        createSeparator(),
-        createTextDisplay(
-            [
-                "### Cargos",
-                `- ${facPanelRoleLabels.verificadoRoleId}: ${formatRole(config.verificadoRoleId)}`,
-                `- ${facPanelRoleLabels.ramoRoleIds}: ${formatRoleList(getDefaultRamoRoles(config))}`,
-                `- ${facPanelRoleLabels.staffRoleIds}: ${formatRoleList(config.staffRoleIds)}`,
-                `- ${facPanelRoleLabels.facRoleIds}: ${formatRoleList(config.facRoleIds)}`,
-            ].join("\n"),
-        ),
-        createSeparator(),
-        createTextDisplay(
-            [
-                "### Vinculo ramo por FAC (automatico)",
-                ...ramoByFacLines,
-            ].join("\n"),
-        ),
-        createSeparator(),
-        ...components,
+function buildFacPanelPageRow(page: number, totalPages: number) {
+    if (totalPages <= 1) return null;
+    const safePage = Math.min(Math.max(0, Math.trunc(page)), totalPages - 1);
+    return new ActionRowBuilder<ButtonBuilder>().addComponents(
+        new ButtonBuilder()
+            .setCustomId(`${facPanelPageCustomIdPrefix}/${safePage - 1}`)
+            .setStyle(ButtonStyle.Secondary)
+            .setLabel(clampLabel("Anterior"))
+            .setDisabled(safePage <= 0),
+        new ButtonBuilder()
+            .setCustomId(`${facPanelPageCustomIdPrefix}/indicator`)
+            .setStyle(ButtonStyle.Secondary)
+            .setLabel(clampLabel(`Pagina ${safePage + 1}/${totalPages}`))
+            .setDisabled(true),
+        new ButtonBuilder()
+            .setCustomId(`${facPanelPageCustomIdPrefix}/${safePage + 1}`)
+            .setStyle(ButtonStyle.Secondary)
+            .setLabel(clampLabel("Proxima"))
+            .setDisabled(safePage >= totalPages - 1),
     );
 }
 
-export function buildFacSettingsV2PanelReply(guild: Guild, config: Partial<GuildConfigSchema>) {
+function buildFacSettingsV2PanelBase(guild: Guild, config: Partial<GuildConfigSchema>, page = 0) {
+    const components = buildFacSettingsComponents();
+    const ramoByFac = normalizeRamoRoleByFac((config as { ramoRoleByFac?: unknown; }).ramoRoleByFac);
+    const facRoleIds = config.facRoleIds ?? [];
+    const ramoEntries = Object.entries(ramoByFac);
+    const totalPages = Math.max(
+        1,
+        Math.ceil(facRoleIds.length / PANEL_LIST_PAGE_SIZE),
+        Math.ceil(ramoEntries.length / PANEL_LIST_PAGE_SIZE),
+    );
+    const safePage = Math.min(Math.max(0, Math.trunc(page)), totalPages - 1);
+    const rangeStart = safePage * PANEL_LIST_PAGE_SIZE;
+    const rangeEnd = rangeStart + PANEL_LIST_PAGE_SIZE;
+
+    const facRoleSlice = facRoleIds.slice(rangeStart, rangeEnd);
+    const facRoleLine = facRoleSlice.length
+        ? facRoleSlice.map((id) => `<@&${id}>`).join(", ")
+        : "`Nenhum cargo nesta pagina`";
+
+    const ramoByFacLines = ramoEntries.length
+        ? ramoEntries
+            .slice(rangeStart, rangeEnd)
+            .map(([facRoleId, ramoRoleIds]) => `- <@&${facRoleId}> -> ${ramoRoleIds.map((id) => `<@&${id}>`).join(", ")}`)
+        : ["`Nenhum vinculo definido`"];
+
+    let channelsText = clampComponentText(
+        [
+            "### Canais",
+            `- ${facPanelChannelLabels.panelChannelId}: ${formatChannel(config.panelChannelId)}`,
+            `- ${facPanelChannelLabels.analiseChannelId}: ${formatChannel(config.analiseChannelId)}`,
+            `- ${facPanelChannelLabels.logChannelId}: ${formatChannel(config.logChannelId)}`,
+        ].join("\n"),
+    );
+
+    let cargosText = clampComponentText(
+        [
+            "### Cargos",
+            `- ${facPanelRoleLabels.verificadoRoleId}: ${formatRole(config.verificadoRoleId)}`,
+            `- ${facPanelRoleLabels.ramoRoleIds}: ${formatRoleList(getDefaultRamoRoles(config))}`,
+            `- ${facPanelRoleLabels.staffRoleIds}: ${formatRoleList(config.staffRoleIds)}`,
+            `- ${facPanelRoleLabels.facRoleIds} (pagina ${safePage + 1}/${totalPages}, total ${facRoleIds.length}): ${facRoleLine}`,
+        ].join("\n"),
+    );
+
+    let ramoText = clampComponentText(
+        [
+            "### Vinculo ramo por FAC (automatico)",
+            `- Pagina ${safePage + 1}/${totalPages}, total ${ramoEntries.length}`,
+            ...ramoByFacLines,
+        ].join("\n"),
+    );
+
+    // Preventive global budget guard for displayable text in components.
+    let displayTotal = channelsText.length + cargosText.length + ramoText.length;
+    if (displayTotal > PANEL_TEXT_BUDGET) {
+        const overflow = displayTotal - PANEL_TEXT_BUDGET;
+        ramoText = clampText(ramoText, Math.max(220, ramoText.length - overflow));
+        displayTotal = channelsText.length + cargosText.length + ramoText.length;
+    }
+    if (displayTotal > PANEL_TEXT_BUDGET) {
+        const overflow = displayTotal - PANEL_TEXT_BUDGET;
+        cargosText = clampText(cargosText, Math.max(260, cargosText.length - overflow));
+    }
+
+    const pageRow = buildFacPanelPageRow(safePage, totalPages);
+    const dynamicComponents = pageRow ? [...components, pageRow] : components;
+
+    return createContainer(
+        "#4f46e5",
+        createTextDisplay(clampComponentText(`## Painel de configuracao FAC | ${guild.name}`)),
+        createSeparator(),
+        createTextDisplay(channelsText),
+        createSeparator(),
+        createTextDisplay(cargosText),
+        createSeparator(),
+        createTextDisplay(ramoText),
+        createSeparator(),
+        ...dynamicComponents,
+    );
+}
+
+export function buildFacSettingsV2PanelReply(guild: Guild, config: Partial<GuildConfigSchema>, page = 0) {
     return {
         flags: ["Ephemeral", "IsComponentsV2"],
-        components: [buildFacSettingsV2PanelBase(guild, config)],
+        components: [buildFacSettingsV2PanelBase(guild, config, page)],
     } satisfies InteractionReplyOptions;
 }
 
-export function buildFacSettingsV2PanelUpdate(guild: Guild, config: Partial<GuildConfigSchema>) {
+export function buildFacSettingsV2PanelUpdate(guild: Guild, config: Partial<GuildConfigSchema>, page = 0) {
     return {
         flags: ["IsComponentsV2"],
-        components: [buildFacSettingsV2PanelBase(guild, config)],
+        components: [buildFacSettingsV2PanelBase(guild, config, page)],
     } satisfies InteractionUpdateOptions;
 }
 
@@ -230,14 +339,14 @@ export function buildFacChannelPicker(key: FacPanelChannelKey) {
             .setChannelTypes(messageChannelTypes)
             .setMinValues(1)
             .setMaxValues(1)
-            .setPlaceholder(`Selecione ${facPanelChannelLabels[key].toLowerCase()}`),
+            .setPlaceholder(clampPlaceholder(`Selecione ${facPanelChannelLabels[key].toLowerCase()}`)),
     );
 }
 
 export function buildFacRolePicker(key: FacPanelRoleKey) {
     const picker = new RoleSelectMenuBuilder()
         .setCustomId(`painel/role/${key}`)
-        .setPlaceholder(`Selecione ${facPanelRoleLabels[key].toLowerCase()}`);
+        .setPlaceholder(clampPlaceholder(`Selecione ${facPanelRoleLabels[key].toLowerCase()}`));
 
     if (key === "ramoRoleIds" || key === "staffRoleIds" || key === "facRoleIds") {
         picker.setMinValues(1).setMaxValues(25);
@@ -256,7 +365,7 @@ export function buildFacRamoFacPicker(guild: Guild, facRoleIds: string[]) {
         .map((role) => ({
             label: role.name.slice(0, 100),
             value: role.id,
-            description: "Escolher FAC para vincular ramo",
+            description: clampDescription("Escolher FAC para vincular ramo"),
         }));
 
     if (!options.length) return null;
@@ -264,7 +373,7 @@ export function buildFacRamoFacPicker(guild: Guild, facRoleIds: string[]) {
     return new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(
         new StringSelectMenuBuilder()
             .setCustomId("painel/link-ramo/select-fac")
-            .setPlaceholder("Selecione a FAC...")
+            .setPlaceholder(clampPlaceholder("Selecione a FAC..."))
             .setMinValues(1)
             .setMaxValues(1)
             .addOptions(options),
@@ -289,14 +398,14 @@ export function buildFacRamoFacPickerPage(guild: Guild, facRoleIds: string[], pa
     const picker = new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(
         new StringSelectMenuBuilder()
             .setCustomId("painel/link-ramo/select-fac")
-            .setPlaceholder(`Selecione a FAC... (${start + 1}-${Math.min(end, roles.length)} de ${roles.length})`)
+            .setPlaceholder(clampPlaceholder(`Selecione a FAC... (${start + 1}-${Math.min(end, roles.length)} de ${roles.length})`))
             .setMinValues(1)
             .setMaxValues(1)
             .addOptions(
                 pageRoles.map((role) => ({
                     label: role.name.slice(0, 100),
                     value: role.id,
-                    description: "Escolher FAC para vincular ramo",
+                    description: clampDescription("Escolher FAC para vincular ramo"),
                 })),
             ),
     );
@@ -306,17 +415,17 @@ export function buildFacRamoFacPickerPage(guild: Guild, facRoleIds: string[], pa
             new ButtonBuilder()
                 .setCustomId(`painel/link-ramo/page/${safePage - 1}`)
                 .setStyle(ButtonStyle.Secondary)
-                .setLabel("Anterior")
+                .setLabel(clampLabel("Anterior"))
                 .setDisabled(safePage <= 0),
             new ButtonBuilder()
                 .setCustomId("painel/link-ramo/page-indicator")
                 .setStyle(ButtonStyle.Secondary)
-                .setLabel(`Pagina ${safePage + 1}/${totalPages}`)
+                .setLabel(clampLabel(`Pagina ${safePage + 1}/${totalPages}`))
                 .setDisabled(true),
             new ButtonBuilder()
                 .setCustomId(`painel/link-ramo/page/${safePage + 1}`)
                 .setStyle(ButtonStyle.Secondary)
-                .setLabel("Proxima")
+                .setLabel(clampLabel("Proxima"))
                 .setDisabled(safePage >= totalPages - 1),
         )
         : null;
@@ -334,7 +443,7 @@ export function buildFacRamoRolePicker(facRoleId: string) {
     return new ActionRowBuilder<RoleSelectMenuBuilder>().addComponents(
         new RoleSelectMenuBuilder()
             .setCustomId(`painel/link-ramo/set/${facRoleId}`)
-            .setPlaceholder("Selecione os cargos de ramo vinculados")
+            .setPlaceholder(clampPlaceholder("Selecione os cargos de ramo vinculados"))
             .setMinValues(1)
             .setMaxValues(25),
     );
@@ -380,3 +489,4 @@ export function parseRoleIdsInput(raw: string) {
         invalid: [...new Set(invalid)],
     };
 }
+

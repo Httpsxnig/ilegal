@@ -364,7 +364,7 @@ export function buildFacLogMessageV2(params: {
             `- Cargo FAC: <@&${request.facRoleId}>`,
             `- Nome/ID: ${request.nome} | ${request.gameId}`,
             `- **Rank:** ${request.rank}`,
-            `- Staff: ${reviewerId ? `<@${reviewerId}>` : "`Nao definido`"}`,
+            `- Staff: ${reviewerId ? `<@${reviewerId}>` : "`Não definido`"}`,
             `- Criado em: ${formatFacDate(request.createdAt)}`,
             `- Decidido em: ${formatFacDate(request.decidedAt ?? new Date())}`,
             `- Cargos: ${clampText(roleStatus, 120)}`,

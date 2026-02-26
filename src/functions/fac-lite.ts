@@ -557,7 +557,7 @@ export function buildFacLiteLogMessageV2(params: {
             `- Cargo FAC: <@&${request.facRoleId}>`,
             `- Nome/ID: ${request.nome} | ${request.gameId}`,
             `- **Rank:** ${request.rank}`,
-            `- Staff: ${reviewerId ? `<@${reviewerId}>` : "`Nao definido`"}`,
+            `- Staff: ${reviewerId ? `<@${reviewerId}>` : "`Não definido`"}`,
             `- Criado em: ${formatFacLiteDate(request.createdAt)}`,
             `- Decidido em: ${formatFacLiteDate(request.decidedAt ?? new Date())}`,
             `- Aplicacao do cargo: ${clampText(roleStatus, 120)}`,

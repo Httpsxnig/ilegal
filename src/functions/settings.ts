@@ -112,15 +112,15 @@ export function isFacPanelRoleKey(value: string): value is FacPanelRoleKey {
 }
 
 function formatChannel(channelId?: string | null) {
-    return channelId ? `<#${channelId}>` : "`Nao definido`";
+    return channelId ? `<#${channelId}>` : "`Não definido`";
 }
 
 function formatRole(roleId?: string | null) {
-    return roleId ? `<@&${roleId}>` : "`Nao definido`";
+    return roleId ? `<@&${roleId}>` : "`Não definido`";
 }
 
 function formatRoleList(roleIds?: string[] | null) {
-    if (!roleIds?.length) return "`Nao definido`";
+    if (!roleIds?.length) return "`Não definido`";
     return clampComponentText(roleIds.map((id) => `<@&${id}>`).join(", "));
 }
 

@@ -306,7 +306,7 @@ function buildFacSettingsV2PanelBase(guild: Guild, config: Partial<GuildConfigSc
 
     return createContainer(
         "#4f46e5",
-        createTextDisplay(clampComponentText(`## Painel de configuracao FAC | ${guild.name}`)),
+        createTextDisplay(clampComponentText(`## Painel de configuração FAC | ${guild.name}`)),
         createSeparator(),
         createTextDisplay(channelsText),
         createSeparator(),

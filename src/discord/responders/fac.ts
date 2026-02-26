@@ -37,7 +37,7 @@ createResponder({
             await interaction.editReply(
                 buildFacNoticeEditV2(
                     "error",
-                    "Configuracao incompleta",
+                    "configuração incompleta",
                     `Faltam campos obrigatorios:\n${missing.map((item) => `- \`${item}\``).join("\n")}`,
                 ),
             );
@@ -54,14 +54,14 @@ createResponder({
 
         if (config.verificadoRoleId && member.roles.cache.has(config.verificadoRoleId)) {
             await interaction.editReply(
-                buildFacNoticeEditV2("warning", "Solicitacao bloqueada", "Voce ja possui cargo Verificado."),
+                buildFacNoticeEditV2("warning", "Solicitação bloqueada", "Voce ja possui cargo Verificado."),
             );
             return;
         }
 
         if (hasAnyFacRole(member, config.facRoleIds ?? [])) {
             await interaction.editReply(
-                buildFacNoticeEditV2("warning", "Solicitacao bloqueada", "Voce ja possui um cargo FAC configurado."),
+                buildFacNoticeEditV2("warning", "Solicitação bloqueada", "Voce ja possui um cargo FAC configurado."),
             );
             return;
         }
@@ -69,7 +69,7 @@ createResponder({
         const pageData = createFacRoleSelectRows(interaction.guild, config.facRoleIds ?? [], 0);
         if (!pageData) {
             await interaction.editReply(
-                buildFacNoticeEditV2("error", "FAC indisponivel", "Nao encontrei cargos FAC validos na configuracao."),
+                buildFacNoticeEditV2("error", "FAC indisponivel", "Nao encontrei cargos FAC validos na configuração."),
             );
             return;
         }
@@ -77,7 +77,7 @@ createResponder({
         await interaction.editReply(
             buildFacNoticeEditV2(
                 "info",
-                "Solicitacao FAC",
+                "Solicitação FAC",
                 `Selecione abaixo o cargo FAC desejado.\nPagina ${pageData.currentPage + 1}/${pageData.totalPages} (${pageData.totalItems} FACs).`,
                 pageData.rows,
             ),
@@ -97,7 +97,7 @@ createResponder({
             await interaction.update(
                 buildFacNoticeUpdateV2(
                     "error",
-                    "Configuracao incompleta",
+                    "configuração incompleta",
                     `Faltam campos obrigatorios:\n${missing.map((item) => `- \`${item}\``).join("\n")}`,
                 ),
             );
@@ -114,14 +114,14 @@ createResponder({
 
         if (config.verificadoRoleId && member.roles.cache.has(config.verificadoRoleId)) {
             await interaction.update(
-                buildFacNoticeUpdateV2("warning", "Solicitacao bloqueada", "Voce ja possui cargo Verificado."),
+                buildFacNoticeUpdateV2("warning", "Solicitação bloqueada", "Voce ja possui cargo Verificado."),
             );
             return;
         }
 
         if (hasAnyFacRole(member, config.facRoleIds ?? [])) {
             await interaction.update(
-                buildFacNoticeUpdateV2("warning", "Solicitacao bloqueada", "Voce ja possui um cargo FAC configurado."),
+                buildFacNoticeUpdateV2("warning", "Solicitação bloqueada", "Voce ja possui um cargo FAC configurado."),
             );
             return;
         }
@@ -129,7 +129,7 @@ createResponder({
         const pageData = createFacRoleSelectRows(interaction.guild, config.facRoleIds ?? [], page);
         if (!pageData) {
             await interaction.update(
-                buildFacNoticeUpdateV2("error", "FAC indisponivel", "Nao encontrei cargos FAC validos na configuracao."),
+                buildFacNoticeUpdateV2("error", "FAC indisponivel", "Nao encontrei cargos FAC validos na configuração."),
             );
             return;
         }
@@ -137,7 +137,7 @@ createResponder({
         await interaction.update(
             buildFacNoticeUpdateV2(
                 "info",
-                "Solicitacao FAC",
+                "Solicitação FAC",
                 `Selecione abaixo o cargo FAC desejado.\nPagina ${pageData.currentPage + 1}/${pageData.totalPages} (${pageData.totalItems} FACs).`,
                 pageData.rows,
             ),
@@ -154,7 +154,7 @@ createResponder({
         const config = await db.guildConfigs.get(interaction.guildId);
         if (!config.facRoleIds?.includes(facRoleId)) {
             await interaction.update(
-                buildFacNoticeUpdateV2("error", "FAC invalida", "O cargo escolhido nao esta permitido na configuracao."),
+                buildFacNoticeUpdateV2("error", "FAC invalida", "O cargo escolhido nao esta permitido na configuração."),
             );
             return;
         }
@@ -179,7 +179,7 @@ createResponder({
             await interaction.editReply(
                 buildFacNoticeEditV2(
                     "error",
-                    "Configuracao incompleta",
+                    "configuração incompleta",
                     `Faltam campos obrigatorios:\n${missing.map((item) => `- \`${item}\``).join("\n")}`,
                 ),
             );
@@ -188,7 +188,7 @@ createResponder({
 
         if (!config.facRoleIds?.includes(facRoleId)) {
             await interaction.editReply(
-                buildFacNoticeEditV2("error", "FAC invalida", "O cargo escolhido nao esta permitido na configuracao."),
+                buildFacNoticeEditV2("error", "FAC invalida", "O cargo escolhido nao esta permitido na configuração."),
             );
             return;
         }
@@ -215,14 +215,14 @@ createResponder({
 
         if (config.verificadoRoleId && member.roles.cache.has(config.verificadoRoleId)) {
             await interaction.editReply(
-                buildFacNoticeEditV2("warning", "Solicitacao bloqueada", "Voce ja possui cargo Verificado."),
+                buildFacNoticeEditV2("warning", "Solicitação bloqueada", "Voce ja possui cargo Verificado."),
             );
             return;
         }
 
         if (hasAnyFacRole(member, config.facRoleIds ?? [])) {
             await interaction.editReply(
-                buildFacNoticeEditV2("warning", "Solicitacao bloqueada", "Voce ja possui um cargo FAC configurado."),
+                buildFacNoticeEditV2("warning", "Solicitação bloqueada", "Voce ja possui um cargo FAC configurado."),
             );
             return;
         }
@@ -277,7 +277,7 @@ createResponder({
             await interaction.editReply(
                 buildFacNoticeEditV2(
                     "success",
-                    "Solicitacao enviada",
+                    "Solicitação enviada",
                     `Seu pedido FAC foi enviado para analise.\nRequest ID: \`${request.requestId}\``,
                 ),
             );

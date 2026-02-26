@@ -1,8 +1,10 @@
 import { env } from "#env";
+import { db } from "#database";
 import { bootstrap } from "@constatic/base";
 import { GatewayIntentBits, Options, Partials } from "discord.js";
 
 setupMemoryAutoRestart();
+setupFacLiteCleanup();
 
 await bootstrap({
     meta: import.meta,
@@ -55,5 +57,41 @@ function setupMemoryAutoRestart() {
         process.exit(137);
     }, intervalMs);
 
+    timer.unref();
+}
+
+function setupFacLiteCleanup() {
+    const enabled = env.FAC_LITE_CLEANUP_ENABLED ?? true;
+    if (!enabled) return;
+
+    const retentionDays = env.FAC_LITE_CLEANUP_DAYS ?? 30;
+    const intervalMs = env.FAC_LITE_CLEANUP_INTERVAL_MS ?? 6 * 60 * 60 * 1000;
+    let running = false;
+
+    const runCleanup = async () => {
+        if (running) return;
+        running = true;
+
+        try {
+            const cutoff = new Date(Date.now() - retentionDays * 24 * 60 * 60 * 1000);
+            const result = await db.facLiteRequests.deleteMany({
+                status: { $in: ["APPROVED", "DENIED"] },
+                createdAt: { $lt: cutoff },
+            });
+
+            if ((result.deletedCount ?? 0) > 0) {
+                console.log(`[fac-lite-cleanup] removidos ${result.deletedCount} requests antigos.`);
+            }
+        } catch (error) {
+            console.error("[fac-lite-cleanup] falha ao limpar requests antigos:", error);
+        } finally {
+            running = false;
+        }
+    };
+
+    void runCleanup();
+    const timer = setInterval(() => {
+        void runCleanup();
+    }, intervalMs);
     timer.unref();
 }

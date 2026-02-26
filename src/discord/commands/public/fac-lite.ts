@@ -1,16 +1,14 @@
 import { createCommand } from "#base";
-import { db } from "#database";
 import {
     buildFacLitePanelMessageV2,
     buildFacNoticeEditV2,
-    getTextChannelFast,
     hasManageGuildPermission,
 } from "#functions";
 import { ApplicationCommandType } from "discord.js";
 
 createCommand({
     name: "fac-lite",
-    description: "Publica ou atualiza o painel de setagem FAC Lite",
+    description: "Publica ou atualiza o painel de setagem LOGS ILEGAL BAU",
     type: ApplicationCommandType.ChatInput,
     dmPermission: false,
     async run(interaction) {
@@ -23,13 +21,11 @@ createCommand({
             return;
         }
 
-        const config = await db.guildConfigs.get(interaction.guildId);
-        const targetChannelId = config.panelChannelId ?? interaction.channelId;
-        const targetChannel = await getTextChannelFast(interaction.client, interaction.guild, targetChannelId);
+        const targetChannel = interaction.channel;
 
-        if (!targetChannel || !("messages" in targetChannel)) {
+        if (!targetChannel || !targetChannel.isTextBased() || !("messages" in targetChannel)) {
             await interaction.editReply(
-                buildFacNoticeEditV2("error", "Canal invalido", "Nao consegui acessar o canal para publicar o Setagem FAC Lite."),
+                buildFacNoticeEditV2("error", "Canal invalido", "Nao consegui acessar o canal para publicar o Setagem LOGS ILEGAL BAU."),
             );
             return;
         }
@@ -39,7 +35,7 @@ createCommand({
 
         if (!panelMessage) {
             await interaction.editReply(
-                buildFacNoticeEditV2("error", "Falha ao publicar", "Nao consegui enviar o painel FAC Lite no canal escolhido."),
+                buildFacNoticeEditV2("error", "Falha ao publicar", "Nao consegui enviar o painel LOGS ILEGAL BAU no canal escolhido."),
             );
             return;
         }
@@ -47,7 +43,7 @@ createCommand({
         await interaction.editReply(
             buildFacNoticeEditV2(
                 "success",
-                "Setagem FAC Lite publicado",
+                "Setagem LOGS ILEGAL BAU publicado",
                 `Painel enviado em <#${targetChannel.id}>.`,
             ),
         );

@@ -2,33 +2,33 @@ import { createEvent } from "#base";
 import { db } from "#database";
 import {
     buildFacNoticeMessageV2,
-    clearFacRoleIdsChatSession,
-    getFacRoleIdsChatSession,
+    clearFacLiteRoleIdsChatSession,
+    getFacLiteRoleIdsChatSession,
     parseRoleIdsInput,
 } from "#functions";
 
 createEvent({
-    name: "Setagem FAC por ID via chat",
+    name: "Setagem FAC Lite por ID via chat",
     event: "messageCreate",
     async run(message) {
         if (message.author.bot || !message.guildId) return;
 
-        const session = getFacRoleIdsChatSession(message.author.id);
+        const session = getFacLiteRoleIdsChatSession(message.author.id);
         if (!session) return;
         if (session.guildId !== message.guildId || session.channelId !== message.channelId) return;
 
         const content = message.content.trim();
         const lower = content.toLowerCase();
         if (["cancelar", "cancel", "sair"].includes(lower)) {
-            clearFacRoleIdsChatSession(message.author.id);
+            clearFacLiteRoleIdsChatSession(message.author.id);
             await message.reply(
-                buildFacNoticeMessageV2("warning", "configuração cancelada", "Captura de IDs FAC cancelada."),
+                buildFacNoticeMessageV2("warning", "Configuracao cancelada", "Captura de IDs LOGS ILEGAL BAU cancelada."),
             ).catch(() => null);
             return;
         }
 
         if (!message.member?.permissions.has("ManageGuild")) {
-            clearFacRoleIdsChatSession(message.author.id);
+            clearFacLiteRoleIdsChatSession(message.author.id);
             await message.reply(
                 buildFacNoticeMessageV2("error", "Sem permissao", "Voce nao tem permissao para configurar o painel."),
             ).catch(() => null);
@@ -62,12 +62,12 @@ createEvent({
         }
 
         const config = await db.guildConfigs.get(message.guildId);
-        config.set("facRoleIds", validRoleIds);
+        config.set("facLiteRoleIds", validRoleIds);
         await config.save();
-        clearFacRoleIdsChatSession(message.author.id);
+        clearFacLiteRoleIdsChatSession(message.author.id);
 
         const lines = [
-            `Salvei ${validRoleIds.length} cargo(s) FAC.`,
+            `Salvei ${validRoleIds.length} cargo(s) LOGS ILEGAL BAU.`,
             "",
             `Cargos: ${validRoleIds.map((id) => `<@&${id}>`).join(", ")}`,
         ];
@@ -79,7 +79,7 @@ createEvent({
         }
 
         await message.reply(
-            buildFacNoticeMessageV2("success", "Cargos FAC atualizados", lines.join("\n")),
+            buildFacNoticeMessageV2("success", "Cargos LOGS ILEGAL BAU atualizados", lines.join("\n")),
         ).catch(() => null);
     },
 });

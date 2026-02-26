@@ -131,7 +131,7 @@ export function buildFacPanelMessageV2(guild: Guild) {
         createTextDisplay(
             clampComponentText(
             [
-                "> Sistema de solicitacao de setagem FAC.",
+                "> Sistema de Solicitação de setagem FAC.",
                 "> Clique no botao abaixo para abrir seu formulario.",
                 "> A equipe staff vai analisar e aprovar ou negar seu pedido.",
             ].join("\n"),
@@ -140,7 +140,7 @@ export function buildFacPanelMessageV2(guild: Guild) {
         createSeparator(),
         createFacPanelRow(),
         createSeparator(),
-        createTextDisplay("-# (c) Direitos reservados da Lotus Group"),
+        createTextDisplay("-# (©) Direitos reservados da Lotus Group"),
     );
 
     return {
@@ -232,7 +232,7 @@ export function createFacRoleSelectRows(guild: Guild, facRoleIds: string[], page
 export function createFacRequestModal(facRoleId: string) {
     return new ModalBuilder()
         .setCustomId(`fac/request/modal/${facRoleId}`)
-        .setTitle(clampLabel("Solicitacao FAC"))
+        .setTitle(clampLabel("Solicitação FAC"))
         .addLabelComponents(
             new LabelBuilder()
                 .setLabel(clampLabel("Nome"))

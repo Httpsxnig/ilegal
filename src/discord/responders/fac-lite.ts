@@ -3,9 +3,11 @@ import { db, type FacLiteRequestSchema } from "#database";
 import {
     buildFacLiteAnalysisMessageV2,
     buildFacLiteLogMessageV2,
+    buildFacLiteNickname,
     buildFacNoticeEditV2,
     buildFacNoticeUpdateV2,
-    canReviewFac,
+    canReviewFacLite,
+    createFacLiteRequestModal,
     createFacLiteRoleSelectRows,
     facLitePanelButtonCustomId,
     facLiteRolePageCustomIdPrefix,
@@ -15,6 +17,8 @@ import {
     getMissingFacLiteConfig,
     getTextChannelFast,
     hasAnyFacRole,
+    normalizeFacLiteForm,
+    type FacLiteRank,
 } from "#functions";
 import { ResponderType } from "@constatic/base";
 import { type Client, type GuildMember } from "discord.js";
@@ -32,7 +36,7 @@ createResponder({
             await interaction.editReply(
                 buildFacNoticeEditV2(
                     "error",
-                    "Configuracao incompleta",
+                    "configuracao incompleta",
                     `Faltam campos obrigatorios:\n${missing.map((item) => `- \`${item}\``).join("\n")}`,
                 ),
             );
@@ -47,14 +51,14 @@ createResponder({
             return;
         }
 
-        if (hasAnyFacRole(member, config.facRoleIds ?? [])) {
+        if (hasAnyFacRole(member, config.facLiteRoleIds ?? [])) {
             await interaction.editReply(
                 buildFacNoticeEditV2("warning", "Solicitacao bloqueada", "Voce ja possui um cargo FAC configurado."),
             );
             return;
         }
 
-        const pageData = createFacLiteRoleSelectRows(interaction.guild, config.facRoleIds ?? [], 0);
+        const pageData = createFacLiteRoleSelectRows(interaction.guild, config.facLiteRoleIds ?? [], 0);
         if (!pageData) {
             await interaction.editReply(
                 buildFacNoticeEditV2("error", "FAC indisponivel", "Nao encontrei cargos FAC validos na configuracao."),
@@ -65,7 +69,7 @@ createResponder({
         await interaction.editReply(
             buildFacNoticeEditV2(
                 "info",
-                "Solicitacao FAC Lite",
+                "Solicitacao LOGS ILEGAL BAU",
                 `Selecione abaixo o cargo FAC desejado.\nPagina ${pageData.currentPage + 1}/${pageData.totalPages} (${pageData.totalItems} FACs).`,
                 pageData.rows,
             ),
@@ -85,7 +89,7 @@ createResponder({
             await interaction.update(
                 buildFacNoticeUpdateV2(
                     "error",
-                    "Configuracao incompleta",
+                    "configuracao incompleta",
                     `Faltam campos obrigatorios:\n${missing.map((item) => `- \`${item}\``).join("\n")}`,
                 ),
             );
@@ -100,14 +104,14 @@ createResponder({
             return;
         }
 
-        if (hasAnyFacRole(member, config.facRoleIds ?? [])) {
+        if (hasAnyFacRole(member, config.facLiteRoleIds ?? [])) {
             await interaction.update(
                 buildFacNoticeUpdateV2("warning", "Solicitacao bloqueada", "Voce ja possui um cargo FAC configurado."),
             );
             return;
         }
 
-        const pageData = createFacLiteRoleSelectRows(interaction.guild, config.facRoleIds ?? [], page);
+        const pageData = createFacLiteRoleSelectRows(interaction.guild, config.facLiteRoleIds ?? [], page);
         if (!pageData) {
             await interaction.update(
                 buildFacNoticeUpdateV2("error", "FAC indisponivel", "Nao encontrei cargos FAC validos na configuracao."),
@@ -118,7 +122,7 @@ createResponder({
         await interaction.update(
             buildFacNoticeUpdateV2(
                 "info",
-                "Solicitacao FAC Lite",
+                "Solicitacao LOGS ILEGAL BAU",
                 `Selecione abaixo o cargo FAC desejado.\nPagina ${pageData.currentPage + 1}/${pageData.totalPages} (${pageData.totalItems} FACs).`,
                 pageData.rows,
             ),
@@ -131,23 +135,42 @@ createResponder({
     types: [ResponderType.StringSelect],
     cache: "cached",
     async run(interaction) {
+        const facRoleId = interaction.values[0];
+        const config = await db.guildConfigs.get(interaction.guildId);
+
+        if (!config.facLiteRoleIds?.includes(facRoleId)) {
+            await interaction.update(
+                buildFacNoticeUpdateV2("error", "FAC invalida", "O cargo escolhido nao esta permitido na configuracao."),
+            );
+            return;
+        }
+
+        await interaction.showModal(createFacLiteRequestModal(facRoleId));
+    },
+});
+
+createResponder({
+    customId: "faclite/request/modal/:facRoleId",
+    types: [ResponderType.Modal, ResponderType.ModalComponent],
+    cache: "cached",
+    parse: (params) => ({ facRoleId: params.facRoleId }),
+    async run(interaction, { facRoleId }) {
         await interaction.deferReply({ flags: ["Ephemeral"] }).catch(() => null);
 
-        const facRoleId = interaction.values[0];
         const config = await db.guildConfigs.get(interaction.guildId);
         const missing = getMissingFacLiteConfig(config);
         if (missing.length) {
             await interaction.editReply(
                 buildFacNoticeEditV2(
                     "error",
-                    "Configuracao incompleta",
+                    "configuracao incompleta",
                     `Faltam campos obrigatorios:\n${missing.map((item) => `- \`${item}\``).join("\n")}`,
                 ),
             );
             return;
         }
 
-        if (!config.facRoleIds?.includes(facRoleId)) {
+        if (!config.facLiteRoleIds?.includes(facRoleId)) {
             await interaction.editReply(
                 buildFacNoticeEditV2("error", "FAC invalida", "O cargo escolhido nao esta permitido na configuracao."),
             );
@@ -162,14 +185,27 @@ createResponder({
             return;
         }
 
-        if (hasAnyFacRole(member, config.facRoleIds ?? [])) {
+        if (hasAnyFacRole(member, config.facLiteRoleIds ?? [])) {
             await interaction.editReply(
                 buildFacNoticeEditV2("warning", "Solicitacao bloqueada", "Voce ja possui um cargo FAC configurado."),
             );
             return;
         }
 
-        const analysisChannel = await getTextChannelFast(interaction.client, interaction.guild, config.analiseChannelId!);
+        const selectedRank = interaction.fields.getStringSelectValues("rank")[0] ?? "";
+        const parsed = normalizeFacLiteForm(
+            interaction.fields.getTextInputValue("nome"),
+            interaction.fields.getTextInputValue("gameId"),
+            selectedRank,
+        );
+        if (!parsed.ok) {
+            await interaction.editReply(
+                buildFacNoticeEditV2("error", "Formulario invalido", parsed.error),
+            );
+            return;
+        }
+
+        const analysisChannel = await getTextChannelFast(interaction.client, interaction.guild, config.facLiteAnaliseChannelId!);
         if (!analysisChannel) {
             await interaction.editReply(
                 buildFacNoticeEditV2("error", "Canal invalido", "Nao consegui acessar o canal de analise configurado."),
@@ -181,6 +217,9 @@ createResponder({
             guildId: interaction.guildId,
             userId: interaction.user.id,
             facRoleId,
+            nome: parsed.data.nome,
+            gameId: parsed.data.gameId,
+            rank: parsed.data.rank,
             analiseChannelId: analysisChannel.id,
         });
 
@@ -204,7 +243,7 @@ createResponder({
                 buildFacNoticeEditV2(
                     "success",
                     "Solicitacao enviada",
-                    `Seu pedido FAC Lite foi enviado para analise.\nRequest ID: \`${request.requestId}\``,
+                    `Seu pedido LOGS ILEGAL BAU foi enviado para analise.\nRequest ID: \`${request.requestId}\``,
                 ),
             );
         } catch (error) {
@@ -230,7 +269,7 @@ createResponder({
 
         const config = await db.guildConfigs.get(interaction.guildId);
         const reviewer = await getGuildMemberFast(interaction.guild, interaction.user.id);
-        if (!reviewer || !canReviewFac(reviewer, config)) {
+        if (!reviewer || !canReviewFacLite(reviewer, config)) {
             await interaction.editReply(
                 buildFacNoticeEditV2("error", "Sem permissao", "Apenas staff configurado pode aprovar ou negar."),
             );
@@ -258,12 +297,13 @@ createResponder({
 
         const targetMember = await getGuildMemberFast(interaction.guild, locked.userId);
         const roleApply = await applyFacLiteRole(targetMember, locked.facRoleId);
+        const nickApply = await applyFacLiteNickname(targetMember, locked.rank as FacLiteRank, locked.nome, locked.gameId);
 
         await interaction.message.edit(
             buildFacLiteAnalysisMessageV2(locked, true),
         ).catch(() => null);
 
-        await sendFacLiteLog(interaction.client, config.logChannelId, locked, interaction.user.id, roleApply);
+        await sendFacLiteLog(interaction.client, config.facLiteLogChannelId, locked, interaction.user.id, roleApply, nickApply);
 
         await interaction.editReply(
             buildFacNoticeEditV2(
@@ -272,6 +312,7 @@ createResponder({
                 [
                     `Request: \`${locked.requestId}\``,
                     `Aplicacao do cargo: ${roleApply.applied ? "OK" : `FALHA (${roleApply.error ?? "sem detalhe"})`}`,
+                    `Nickname: ${nickApply.applied ? "OK" : `FALHA (${nickApply.error ?? "sem detalhe"})`}`,
                 ].join("\n"),
             ),
         );
@@ -288,7 +329,7 @@ createResponder({
 
         const config = await db.guildConfigs.get(interaction.guildId);
         const reviewer = await getGuildMemberFast(interaction.guild, interaction.user.id);
-        if (!reviewer || !canReviewFac(reviewer, config)) {
+        if (!reviewer || !canReviewFacLite(reviewer, config)) {
             await interaction.editReply(
                 buildFacNoticeEditV2("error", "Sem permissao", "Apenas staff configurado pode aprovar ou negar."),
             );
@@ -318,7 +359,7 @@ createResponder({
             buildFacLiteAnalysisMessageV2(locked, true),
         ).catch(() => null);
 
-        await sendFacLiteLog(interaction.client, config.logChannelId, locked, interaction.user.id);
+        await sendFacLiteLog(interaction.client, config.facLiteLogChannelId, locked, interaction.user.id);
 
         await interaction.editReply(
             buildFacNoticeEditV2("success", "Pedido negado", `Request \`${locked.requestId}\` foi negado.`),
@@ -330,6 +371,9 @@ async function createPendingFacLiteRequest(data: {
     guildId: string;
     userId: string;
     facRoleId: string;
+    nome: string;
+    gameId: string;
+    rank: FacLiteRank;
     analiseChannelId: string;
 }) {
     for (let attempt = 0; attempt < 5; attempt++) {
@@ -340,6 +384,9 @@ async function createPendingFacLiteRequest(data: {
                 guildId: data.guildId,
                 userId: data.userId,
                 facRoleId: data.facRoleId,
+                nome: data.nome,
+                gameId: data.gameId,
+                rank: data.rank,
                 status: "PENDING",
                 createdAt: new Date(),
                 analiseChannelId: data.analiseChannelId,
@@ -368,12 +415,30 @@ async function applyFacLiteRole(member: GuildMember | null, facRoleId?: string |
     }
 }
 
+async function applyFacLiteNickname(member: GuildMember | null, rank: FacLiteRank, nome: string, gameId: string) {
+    if (!member) {
+        return { applied: false, error: "Membro nao encontrado no servidor." };
+    }
+
+    const nickname = buildFacLiteNickname(rank, nome, gameId);
+    try {
+        await member.setNickname(nickname);
+        return { applied: true, error: undefined };
+    } catch (error) {
+        return { applied: false, error: toErrorMessage(error) };
+    }
+}
+
 async function sendFacLiteLog(
     client: Client,
     logChannelId: string | null | undefined,
-    request: Pick<FacLiteRequestSchema, "requestId" | "guildId" | "status" | "userId" | "facRoleId" | "createdAt" | "decidedAt">,
+    request: Pick<FacLiteRequestSchema, "requestId" | "guildId" | "status" | "userId" | "facRoleId" | "nome" | "gameId" | "rank" | "createdAt" | "decidedAt">,
     reviewerId?: string,
     roleResult?: {
+        applied?: boolean;
+        error?: string;
+    },
+    nicknameResult?: {
         applied?: boolean;
         error?: string;
     },
@@ -390,6 +455,8 @@ async function sendFacLiteLog(
             reviewerId,
             roleApplied: roleResult?.applied,
             roleError: roleResult?.error,
+            nicknameApplied: nicknameResult?.applied,
+            nicknameError: nicknameResult?.error,
         }),
     ).catch((error) => {
         console.error(`[fac-lite] falha ao enviar log (${request.requestId})`, error);

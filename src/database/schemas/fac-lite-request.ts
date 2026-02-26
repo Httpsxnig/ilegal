@@ -7,6 +7,13 @@ export const facLiteRequestSchema = new Schema(
         guildId: t.string,
         userId: t.string,
         facRoleId: t.string,
+        nome: t.string,
+        gameId: t.string,
+        rank: {
+            type: String,
+            enum: ["LIDER", "SUB"],
+            required: true,
+        },
         status: {
             type: String,
             enum: ["PENDING", "APPROVED", "DENIED"],

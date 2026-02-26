@@ -18,6 +18,10 @@ export const guildConfigSchema = new Schema(
             default: {},
         },
         staffRoleIds: { type: [String], default: [] },
+        facLiteAnaliseChannelId: String,
+        facLiteLogChannelId: String,
+        facLiteStaffRoleIds: { type: [String], default: [] },
+        facLiteRoleIds: { type: [String], default: [] },
     },
     {
         timestamps: true,

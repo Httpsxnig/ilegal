@@ -21,4 +21,10 @@ export const env = await validateEnv(z.looseObject({
     AUTO_RESTART_CHECK_INTERVAL_MS: z.coerce.number().int().min(1000).max(300000).optional(),
     AUTO_RESTART_MEMORY_METRIC: z.enum(["heapUsed", "rss"]).optional(),
     AUTO_RESTART_BREACH_COUNT: z.coerce.number().int().min(1).max(60).optional(),
+    FAC_LITE_CLEANUP_ENABLED: z
+        .string()
+        .optional()
+        .transform((value) => value?.toLowerCase() !== "false"),
+    FAC_LITE_CLEANUP_DAYS: z.coerce.number().int().min(1).max(3650).optional(),
+    FAC_LITE_CLEANUP_INTERVAL_MS: z.coerce.number().int().min(60000).max(86400000).optional(),
 }));

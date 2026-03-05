@@ -20,6 +20,7 @@ const DISCORD_PLACEHOLDER_MAX = 150;
 const COMPONENT_TEXT_MAX = 1000;
 const PANEL_TEXT_BUDGET = 2600;
 const PANEL_LIST_PAGE_SIZE = 8;
+const FAC_RAMO_PICKER_PAGE_SIZE = 25;
 
 export const facPanelPageCustomIdPrefix = "painel/page";
 
@@ -358,26 +359,7 @@ export function buildFacRolePicker(key: FacPanelRoleKey) {
 }
 
 export function buildFacRamoFacPicker(guild: Guild, facRoleIds: string[]) {
-    const options = facRoleIds
-        .map((roleId) => guild.roles.cache.get(roleId))
-        .filter((role): role is NonNullable<typeof role> => Boolean(role))
-        .slice(0, 25)
-        .map((role) => ({
-            label: role.name.slice(0, 100),
-            value: role.id,
-            description: clampDescription("Escolher FAC para vincular ramo"),
-        }));
-
-    if (!options.length) return null;
-
-    return new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(
-        new StringSelectMenuBuilder()
-            .setCustomId("painel/link-ramo/select-fac")
-            .setPlaceholder(clampPlaceholder("Selecione a FAC..."))
-            .setMinValues(1)
-            .setMaxValues(1)
-            .addOptions(options),
-    );
+    return buildFacRamoFacPickerPage(guild, facRoleIds, 0)?.picker ?? null;
 }
 
 export function buildFacRamoFacPickerPage(guild: Guild, facRoleIds: string[], page = 0) {
@@ -387,12 +369,11 @@ export function buildFacRamoFacPickerPage(guild: Guild, facRoleIds: string[], pa
 
     if (!roles.length) return null;
 
-    const pageSize = 25;
-    const totalPages = Math.ceil(roles.length / pageSize);
+    const totalPages = Math.ceil(roles.length / FAC_RAMO_PICKER_PAGE_SIZE);
     const requestedPage = Number.isFinite(page) ? Math.trunc(page) : 0;
     const safePage = Math.min(Math.max(0, requestedPage), totalPages - 1);
-    const start = safePage * pageSize;
-    const end = start + pageSize;
+    const start = safePage * FAC_RAMO_PICKER_PAGE_SIZE;
+    const end = start + FAC_RAMO_PICKER_PAGE_SIZE;
     const pageRoles = roles.slice(start, end);
 
     const picker = new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(
@@ -430,9 +411,12 @@ export function buildFacRamoFacPickerPage(guild: Guild, facRoleIds: string[], pa
         )
         : null;
 
+    const rows = navigation ? [picker, navigation] : [picker];
+
     return {
         picker,
         navigation,
+        rows,
         currentPage: safePage,
         totalPages,
         totalItems: roles.length,
@@ -489,4 +473,3 @@ export function parseRoleIdsInput(raw: string) {
         invalid: [...new Set(invalid)],
     };
 }
-

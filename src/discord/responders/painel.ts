@@ -133,13 +133,12 @@ createResponder({
             return;
         }
 
-        const rows = pageData.navigation ? [pageData.picker, pageData.navigation] : [pageData.picker];
         await interaction.reply(
             buildFacNoticeReplyV2(
                 "info",
                 "Vincular ramo por FAC",
                 `Selecione a FAC que recebera cargos de ramo automaticos na aprovacao.\nPagina ${pageData.currentPage + 1}/${pageData.totalPages} (${pageData.totalItems} FACs).`,
-                rows,
+                pageData.rows,
             ),
         );
     },
@@ -161,13 +160,12 @@ createResponder({
             return;
         }
 
-        const rows = pageData.navigation ? [pageData.picker, pageData.navigation] : [pageData.picker];
         await interaction.update(
             buildFacNoticeUpdateV2(
                 "info",
                 "Vincular ramo por FAC",
                 `Selecione a FAC que recebera cargos de ramo automaticos na aprovacao.\nPagina ${pageData.currentPage + 1}/${pageData.totalPages} (${pageData.totalItems} FACs).`,
-                rows,
+                pageData.rows,
             ),
         );
     },
